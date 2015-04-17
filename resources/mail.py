@@ -10,6 +10,7 @@ class Mail(Resource):
 
         parser = reqparse.RequestParser()
         parser.add_argument('markSeen', type=bool, default=False)
+        parser.add_argument('markUnseen', type=bool, default=False)
         args = parser.parse_args()
 
         if uid:
@@ -27,8 +28,10 @@ class Mail(Resource):
             if uid:
                 m['body'] = str(mail.as_message())
             mails.append(m)
-            if args['markSeen']:
+            if args['markSeen'] and not args['markUnseen']:
                 mail.seen = True
+            elif args['markUnseen'] and not args['markSeen']:
+                mail.seen = False
         return mails
     
     def delete(self, mailbox, uid):
