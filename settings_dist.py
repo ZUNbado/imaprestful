@@ -1,0 +1,2 @@
+HOST = 'mail.example.org'
+
