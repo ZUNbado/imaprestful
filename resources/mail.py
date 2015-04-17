@@ -1,5 +1,5 @@
 from flask import request
-from flask.ext.restful import Resource, fields, marshal_with
+from flask.ext.restful import Resource, fields, marshal_with, reqparse
 from common.imap import getLogin
 
 class Mail(Resource):
@@ -8,6 +8,9 @@ class Mail(Resource):
         if not client['status']: return client['msg'], 500
         client = client['client']
 
+        parser = reqparse.RequestParser()
+        parser.add_argument('markSeen', type=bool, default=False)
+        args = parser.parse_args()
 
         if uid:
             search = 'UID %s' % uid
@@ -24,4 +27,23 @@ class Mail(Resource):
             if uid:
                 m['body'] = str(mail.as_message())
             mails.append(m)
+            if args['markSeen']:
+                mail.seen = True
         return mails
+    
+    def delete(self, mailbox, uid):
+        client = getLogin()
+        if not client['status']: return client['msg'], 500
+        client = client['client']
+
+        parser = reqparse.RequestParser()
+        parser.add_argument('expunge', type=bool, default=False)
+        args = parser.parse_args()
+
+        mail  = list(client.walk(mailbox, 'UID %s' % uid))
+        if len(mail) == 1:
+            mail[0].deleted = True
+            if args['expunge']:
+                client.expunge()
+        else:
+            return 'Error', 500
